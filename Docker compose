@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7
+    restart: always
+    environment:
+      REDIS_PASSWORD: yourpassword
+    command: redis-server --requirepass yourpassword
+
+  anuxbot:
+    build: .
+    restart: always
+    env_file: .env
+    depends_on:
+      - redis
