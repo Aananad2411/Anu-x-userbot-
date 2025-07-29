@@ -1,37 +1,34 @@
 import asyncio
 import os
-from telethon import TelegramClient, events
-import aioredis
+from redis.asyncio import Redis
+from pyrogram import Client
 
-from core.loader import load_plugins
+API_ID = int(os.environ.get("API_ID"))
+API_HASH = os.environ.get("API_HASH")
+SESSION_STRING = os.environ.get("SESSION_STRING")
+REDIS_URL = os.environ.get("REDIS_URL")
+REDIS_PASS = os.environ.get("REDIS_PASS")
 
-API_ID = int(os.getenv("API_ID"))
-API_HASH = os.getenv("API_HASH")
-SESSION = os.getenv("SESSION", "anu_x_userbot")
+app = Client(name="AnuX", api_id=API_ID, api_hash=API_HASH, session_string=SESSION_STRING)
+redis = Redis.from_url(REDIS_URL, password=REDIS_PASS, decode_responses=True)
 
-REDIS_URL = os.getenv("REDIS_URL")
-REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+async def check_redis():
+    try:
+        await redis.set("anu_test", "working")
+        pong = await redis.get("anu_test")
+        if pong == "working":
+            print("✅ Redis connected.")
+        else:
+            print("❌ Redis test failed.")
+    except Exception as e:
+        print(f"Redis error: {e}")
 
-bot = TelegramClient(SESSION, API_ID, API_HASH)
-bot.redis = None
-
-async def setup_redis():
-    if REDIS_URL:
-        bot.redis = await aioredis.from_url(
-            REDIS_URL,
-            password=REDIS_PASSWORD,
-            decode_responses=True
-        )
-        print("✅ Redis connected")
-    else:
-        print("⚠️ Redis not configured")
-
-async def main():
-    await bot.start()
-    await setup_redis()
-    load_plugins(bot)
-    print("🚀 Anu X Userbot is up and running!")
-    await bot.run_until_disconnected()
+async def start_bot():
+    await check_redis()
+    await app.start()
+    print("✨ Anu X Userbot Started")
+    await idle()
+    await app.stop()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(start_bot())
